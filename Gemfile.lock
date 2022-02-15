@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     full_metal_body (0.1.0)
+      pg (~> 1.x)
       rails (>= 7.0.1)
 
 GEM
@@ -109,6 +110,7 @@ GEM
     nio4r (2.5.8)
     nokogiri (1.13.1-x86_64-darwin)
       racc (~> 1.4)
+    pg (1.3.2)
     racc (1.6.0)
     rack (2.2.3)
     rack-test (1.1.0)
@@ -140,7 +142,6 @@ GEM
       thor (~> 1.0)
       zeitwerk (~> 2.5)
     rake (13.0.6)
-    sqlite3 (1.4.2)
     strscan (3.0.1)
     thor (1.2.1)
     timeout (0.2.0)
@@ -156,7 +157,6 @@ PLATFORMS
 
 DEPENDENCIES
   full_metal_body!
-  sqlite3
 
 BUNDLED WITH
    2.3.5

@@ -20,4 +20,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "rails", ">= 7.0.1"
   spec.add_dependency "pg", '~> 1.x'
+  spec.add_dependency "bury", '>= 2.0.0'
 end

@@ -11,15 +11,15 @@ class FullMetalBody::BlockedKeyTest < ActiveSupport::TestCase
 
   test "blocked_key should be present." do
     blocked_key = @blocked_action.blocked_keys.build
-    assert_equal false, blocked_key.valid?
-    assert_equal true, blocked_key.errors.of_kind?(:blocked_key, :blank)
+    assert_not blocked_key.valid?
+    assert blocked_key.errors.of_kind?(:blocked_key, :blank)
   end
 
   test "it should be unique." do
     @blocked_action.blocked_keys.create!(blocked_key: @keys)
     blocked_key = @blocked_action.blocked_keys.build(blocked_key: @keys)
-    assert_equal false, blocked_key.valid?
-    assert_equal true, blocked_key.errors.of_kind?(:blocked_action, :taken)
+    assert_not blocked_key.valid?
+    assert blocked_key.errors.of_kind?(:blocked_action, :taken)
     assert_raises(ActiveRecord::RecordInvalid) do
       blocked_key.save!
     end

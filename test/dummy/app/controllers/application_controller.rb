@@ -1,3 +1,3 @@
 class ApplicationController < ActionController::Base
-  # include FullMetalBody::InputValidationAction
+  include FullMetalBody::InputValidationAction
 end

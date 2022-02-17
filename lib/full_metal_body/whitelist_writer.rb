@@ -2,6 +2,7 @@
 
 require 'json'
 require 'full_metal_body/deep_sort'
+require 'full_metal_body/dynamic_whitelist_generator'
 using FullMetalBody::DeepSort
 
 module FullMetalBody

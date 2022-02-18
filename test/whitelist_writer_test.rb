@@ -14,9 +14,9 @@ class FullMetalBody::WhitelistWriterTest < ActiveSupport::TestCase
   end
 
   test 'it should create a whitelist file.' do
-    assert_not File.exist?(subject.save_path)
-    subject.write!(@blocked_keys)
-    assert File.exist?(subject.save_path)
+    assert_changes -> { File.exist?(subject.save_path) }, from: false, to: true do
+      subject.write!(@blocked_keys)
+    end
     assert_yaml_correct do
       {
         'articles' => {

@@ -55,12 +55,8 @@ class FullMetalBody::Internal::InputFileValidatorTest < ActiveSupport::TestCase
   end
 
   test 'it should not pass when options is nil and file_size is exceeded.' do
-    @options = nil 
-    @value = ActionDispatch::Http::UploadedFile.new(
-      filename: 'mandrill.pdf',
-      type: 'application/pdf',
-      tempfile: StringIO.new('a' * 101.megabytes),
-    )
+    @options = nil
+    @value = upload_text(file_size: 101.megabytes)
     assert_not subject.valid?
     assert subject.errors.of_kind?(:attribute, :too_large_size)
   end

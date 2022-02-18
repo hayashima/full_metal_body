@@ -15,3 +15,19 @@ if ActiveSupport::TestCase.respond_to?(:fixture_path=)
 end
 
 ActiveSupport::TestCase.send(:include, CustomValidatorHelper)
+
+def upload_image
+  ActionDispatch::Http::UploadedFile.new(
+    filename: 'mandrill.png',
+    type: 'image/png',
+    tempfile: file_fixture('images/mandrill.png').read
+  )
+end
+
+def upload_text(file_size:)
+  ActionDispatch::Http::UploadedFile.new(
+    filename: 'nyan.txt',
+    type: 'text/plain',
+    tempfile: StringIO.new('a' * file_size),
+  )
+end

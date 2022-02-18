@@ -74,6 +74,7 @@ module FullMetalBody
         whitelist = YAML.load_file(save_path)
         @data.deep_merge!(whitelist)
       end
+      @data.deep_sort!
       File.open(save_path, "w") do |file|
         YAML.dump(@data, file)
       end

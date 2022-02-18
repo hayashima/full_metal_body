@@ -94,6 +94,7 @@ GEM
     method_source (1.0.0)
     mini_mime (1.1.2)
     minitest (5.15.0)
+    minitest-stub_any_instance (1.0.3)
     net-imap (0.2.3)
       digest
       net-protocol
@@ -159,6 +160,7 @@ PLATFORMS
 
 DEPENDENCIES
   full_metal_body!
+  minitest-stub_any_instance
 
 BUNDLED WITH
    2.3.5

@@ -1,0 +1,37 @@
+---
+comments:
+  index:
+    article_id:
+      type: number
+  new:
+    article_id:
+      type: number
+  create:
+    article_id:
+      type: number
+    comment:
+      content:
+        type: string
+  show:
+    article_id:
+      type: number
+    id:
+      type: number
+  edit:
+    article_id:
+      type: number
+    id:
+      type: number
+  update:
+    article_id:
+      type: number
+    id:
+      type: number
+    comment:
+      content:
+        type: string
+  destroy:
+    article_id:
+      type: number
+    id:
+      type: number

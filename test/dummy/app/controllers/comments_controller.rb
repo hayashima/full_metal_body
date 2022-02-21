@@ -4,7 +4,7 @@ class CommentsController < ApplicationController
 
   # GET /comments
   def index
-    @comments = Comment.all
+    @comments = @article.comments
   end
 
   # GET /comments/1
@@ -13,7 +13,7 @@ class CommentsController < ApplicationController
 
   # GET /comments/new
   def new
-    @comment = Comment.new
+    @comment = @article.comments.build
   end
 
   # GET /comments/1/edit
@@ -58,6 +58,6 @@ class CommentsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def comment_params
-      params.require(:comment).permit(:article_id, :content)
+      params.require(:comment).permit(:content)
     end
 end

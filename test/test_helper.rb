@@ -32,3 +32,10 @@ def upload_text(file_size:)
     tempfile: StringIO.new('a' * file_size),
   )
 end
+
+class ActionDispatch::IntegrationTest
+  def after_teardown
+    super
+    FileUtils.rm_rf(ActiveStorage::Blob.service.root)
+  end
+end

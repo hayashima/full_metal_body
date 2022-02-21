@@ -5,7 +5,7 @@ module FullMetalBody
 
     include InputKeyUtils
 
-    # @param [Array<String|Symbol>] keys
+    # @param [Array<String,Symbol>] keys
     # @param [Object] value
     # @param [Hash] whitelist
     def initialize(keys, value, whitelist = {})
@@ -57,8 +57,8 @@ module FullMetalBody
     end
 
     # 動的に配列のホワイトリストを生成する
-    # @param [Array<String|Symbol>] keys キーの配列
-    # @option [Array<String|Symbol>] prefix_keys 配列がネストしていた場合に、上位キー情報を渡す
+    # @param [Array<String,Symbol>] keys キーの配列
+    # @option [Array<String,Symbol>] prefix_keys 配列がネストしていた場合に、上位キー情報を渡す
     def generate_whitelist_for_array(keys, prefix_keys = [])
       parent_keys, child_keys = separate_by_array_key(keys)
       parent_keys = prefix_keys + parent_keys
@@ -196,7 +196,7 @@ module FullMetalBody
     class ParseArrayError < StandardError
 
       # @param [String] message
-      # @param [Array<String|Symbol>] keys
+      # @param [Array<String,Symbol>] keys
       def initialize(message, keys)
         @keys = keys
         super("#{message}: #{@keys}")

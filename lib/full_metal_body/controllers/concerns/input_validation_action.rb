@@ -26,9 +26,6 @@ module FullMetalBody
 
     private
 
-    #
-    # パラメーターの検証を行う
-    #
     def validate_params
       blocked_keys = []
       whitelist = get_whitelist
@@ -40,7 +37,6 @@ module FullMetalBody
         if permit_all_params?(key, whitelist)
           dynamic_whitelist_generator = DynamicWhitelistGenerator.new(key, value, whitelist)
           whitelist = dynamic_whitelist_generator.execute!
-          # whitelistの参照を掴んでいるのでGCされなさそうな気がするのでnilで開放する
           # rubocop:disable Lint/UselessAssignment
           dynamic_whitelist_generator = nil
           # rubocop:enable Lint/UselessAssignment
@@ -49,54 +45,46 @@ module FullMetalBody
         valid, result = validate_each(key, value, whitelist)
         if valid
           if result.nil? && !permit_all_params?(key, whitelist)
-            # ホワイトリスト外のとき、記録・カウントする
             record_blocked_key(key.join('.'))
             blocked_keys << key
 
             next if (ENV['USE_WHITELIST_COUNT_CHECK'] || '1') == '0'
 
-            # ホワイトリスト外のキーのカウントチェックを使用する場合
             if blocked_keys.size > MAX_BLOCKED_KEYS_COUNT
               SaveBlockedKeysService.execute!(controller_path, action_name, blocked_keys)
               output_error(
                 blocked_keys.to_s,
-                "ホワイトリスト外のパラメータが#{MAX_BLOCKED_KEYS_COUNT}つより多い",
+                "Unknown parameters existed over #{MAX_BLOCKED_KEYS_COUNT}.",
                 )
               return nil
             end
           end
         else
-          # 検証エラーのとき、中断する
           output_error(key.join('.'), result.details)
           return nil
         end
       end
 
-      # ブロックされたキーがなければ処理終了
       return if blocked_keys.empty?
 
       SaveBlockedKeysService.execute!(controller_path, action_name, blocked_keys)
 
-      # 開発環境では、ホワイトリストの自動生成および例外を発生させる
-      # return unless Rails.env.development?
+      return unless Rails.env.development?
 
       WhitelistWriter.new(controller_path, action_name).write!(blocked_keys)
-      raise StandardError, "#{blocked_keys} がホワイトリストに含まれていません。tmp/whitelist/#{controller_path} にひな形が生成されています。"
+      raise StandardError, "#{blocked_keys} are not included in whitelist. A template has been created in 'tmp/whitelist/#{controller_path}'"
     end
 
+    # Validate with whitelist
     #
-    # 値を順にバリデーションする
+    # @param [Array<String>] key
+    # @param [Object] value
+    # @param [Hash] whitelist
     #
-    # @param [Array<String>] key キー
-    # @param [Object] value バリュー
-    # @param [Hash] whitelist ホワイトリスト
-    #
-    # @return [Boolean] バリデーションが成功したかどうか
-    # @return [Hash, ActiveModel::Errors] 成功時：許可されているか、失敗時：エラー情報
-    #
+    # @return [Boolean] (true, false)
+    # @return [Hash, ActiveModel::Errors] In success: Type definition. In failure: Error infos.
     def validate_each(key, value, whitelist)
       key_type = nil
-      # valueがnilの場合に空配列になると入力検証のルールが無視されるので、nilの場合はnilを含んだ配列にする
       (value.nil? ? [nil] : Array(value)).flatten.each do |v|
         validation = InputValidation.new(key.map(&:to_s), v, whitelist)
         key_type = validation.key_type
@@ -105,23 +93,22 @@ module FullMetalBody
       return true, key_type
     end
 
+    # Get hash keys recursively.
     #
-    # ハッシュをキーにばらす
+    # @param [Object] obj object
+    # @param [Array<String>] key
+    # @param [Array<String>] result
     #
-    # @param [Object] o オブジェクト
-    # @param [Array<String>] key ハッシュのキーの保持
-    # @param [Array<String>] result ばらした結果の保持
+    # @return [Array<String>] result
     #
-    # @return [Array<String>] result ばらした結果
-    #
-    def hash_keys(o, key = [], result = [])
-      case o
+    def hash_keys(obj, key = [], result = [])
+      case obj
       when Hash
-        o.each do |k, v|
+        obj.each do |k, v|
           hash_keys(v, key + [k], result)
         end
       when Array
-        o.each_with_index do |v, idx|
+        obj.each_with_index do |v, idx|
           hash_keys(v, key + [idx], result)
         end
       else
@@ -131,9 +118,9 @@ module FullMetalBody
     end
 
     #
-    # ホワイトリストの取得
+    # Get a whitelist from config/whitelist/**/*.yml
     #
-    # @return [Hash] ホワイトリスト
+    # @return [Hash] Whitelist
     #
     def get_whitelist
       path = Rails.root.join('config', 'whitelist', "#{controller_path}.yml")
@@ -146,30 +133,31 @@ module FullMetalBody
     end
 
     #
-    # 検証エラーを出力する
+    # Output validation errors
     #
-    # @param [String] key キー
-    # @param [String] errors エラーに表示する文字列
+    # @param [String] key
+    # @param [String] errors
     #
     def output_error(key, errors)
       error_message = <<~ERR
         Input validation error detected
           Process: #{controller_path}##{action_name}
-          User: #{current_user&.id || '不明'}
+          User: #{current_user&.id || 'unknown'}
           IP: #{request.remote_ip}
           Key: #{key}
           Errors: #{errors}
       ERR
-      # TODO: Bugsnag以外でも対応できるようにしたい
-      # Bugsnag.notify(error_message) if Rails.env.production?
+      # TODO: I want to be able to handle more than just Bugsnag.
+      if Rails.env.production?
+        Bugsnag.notify(error_message) if defined?(Bugsnag)
+      end
       logger.error error_message
       head :bad_request
     end
 
+    # Logging key and process_name when key is not included in whitelist.
     #
-    # ホワイトリストに含まれないときに記録する
-    #
-    # @param [String] key キー
+    # @param [String] key
     #
     def record_blocked_key(key)
       process_name = "#{controller_path}##{action_name}"
@@ -177,13 +165,11 @@ module FullMetalBody
       logger.warn message
     end
 
-    # 特定のキー以下のパラメーターを許可するかどうかを返す。
-    # stringとしての検証は行うが、blocked keyとしては扱わないようにしたいため。
-    # _permit_allにtrueが設定されていたら許可する
+    # Permit all parameters if '_permit_all: true' is existed.
     #
-    # @param [Array] keys パラメーターキー
-    # @param [Hash] whitelist ホワイトリスト
-    # @return [Boolean] 全て許可の項目があればtrueを返す。それ以外はfalseを返す
+    # @param [Array<String,Symbol>] keys
+    # @param [Hash] whitelist
+    # @return [Boolean] (true, false)
     def permit_all_params?(keys, whitelist)
       return false if whitelist.blank?
 

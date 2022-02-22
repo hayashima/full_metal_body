@@ -21,7 +21,7 @@ module FullMetalBody
     end
 
     def create_whitelist_dir
-      empty_directory('config/full_metal_body')
+      empty_directory('config/whitelist')
     end
 
     private

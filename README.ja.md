@@ -1,5 +1,7 @@
 # FullMetalBody
 
+[![Test](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml/badge.svg)](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml)
+
 フルメタルボディは、before_actionの段階で入力値検証を行うためのRails Pluginです。
 
 YAMLファイルにパラメーターのホワイトリストを記述し、許可されたキーと値の場合のみ、通過できます。

@@ -1,10 +1,7 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-# Specify your gem's dependencies in full_metal_body.gemspec.
 gemspec
-
-# gem "sqlite3"
 
 gem "image_processing", ">= 1.2"
 

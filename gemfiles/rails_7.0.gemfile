@@ -1,0 +1,12 @@
+source 'https://rubygems.org'
+
+gem 'rails', '~> 7.0.1'
+gem 'pg', '~> 1.0'
+gem "image_processing", ">= 1.2"
+gem 'minitest-stub_any_instance'
+
+if Gem::Version.create(RUBY_VERSION) >= Gem::Version.create("3.1.0")
+  gem 'net-smtp'
+end
+
+gemspec path: '../'

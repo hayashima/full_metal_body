@@ -16,6 +16,9 @@ module FullMetalBody
 
     validates :key, "full_metal_body/internal/input_string": true, if: :check_key?
 
+    # @param [Array<String, Symbol>] key
+    # @param [Object] value
+    # @param [Hash] whitelist
     def initialize(key, value, whitelist)
       @key = key
       @value = value
@@ -29,20 +32,16 @@ module FullMetalBody
 
     private
 
+    # Whether to validate the key
     #
-    # キーのバリデーションを行うか判別
-    #
-    # @return [Boolean] キーのバリデーションを行うか
-    #
+    # @return [Boolean] (true, false)
     def check_key?
       !@key_type
     end
 
+    # Which validator to validate the value with
     #
-    # 値をどのバリデーターで検証するか
-    #
-    # @return [String] バリデーターの文字列
-    #
+    # @return [String] validator type
     def value_validate
       if @key_type.nil?
         if @value.is_a?(ActionDispatch::Http::UploadedFile)
@@ -82,36 +81,31 @@ module FullMetalBody
       end
     end
 
+    # Set type-definition to @key_type
     #
-    # 許可されたパラメーターをセットする
-    #
-    # @param [Hash] whitelist ホワイトリスト
-    #
+    # @param [Hash] whitelist
     def set_key_type(whitelist)
-      # ホワイトリストがないとき
       return @key_type = nil if whitelist.nil?
 
-      # ホワイトリストから直接取れるとき
+      # When ype-definition by key is exists in whitelist
       return @key_type = whitelist.dig(*@key) if has_type?(whitelist.dig(*@key))
 
-      # キーがインデックス番号を持つ配列のとき
+      # When @key has the index number of the array
       if @key.find_index { |k| key_numeric?(k) }
         result = get_key_type_recursively(@key, whitelist)
         return @key_type = result if has_type?(result)
       end
 
-      # ホワイトリストにキーが見つからないとき
+      # When no type-definition by key in whitelist
       @key_type = nil
     end
 
+    # Search type-definition by key recursively from whitelist
     #
-    # 再帰的にホワイトリストからキーをさがす
+    # @param [Array<String>] keys
+    # @param [Hash] whitelist
     #
-    # @param [Array<String>] keys キー
-    # @param [Hash] whitelist ホワイトリスト
-    #
-    # @return [Object] キーのタイプ
-    #
+    # @return [Hash, NilClass] type-definition by key
     def get_key_type_recursively(keys, whitelist)
       parent_keys, child_keys = separate_by_array_key(keys)
       parent = parent_keys.empty? ? whitelist : whitelist.dig(*parent_keys)
@@ -138,13 +132,11 @@ module FullMetalBody
       end
     end
 
+    # Whether or not the item has a type attribute.
     #
-    # 取得した結果がハッシュで'type'を持つかどうか
+    # @param [Object] item
     #
-    # @param [Object] item 対象
-    #
-    # @return [Bool] 結果
-    #
+    # @return [Boolean] (true, false)
     def has_type?(item)
       return false unless item.is_a?(Hash)
 

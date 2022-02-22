@@ -14,8 +14,8 @@ module FullMetalBody
       @whitelist = whitelist
     end
 
-    # 動的にホワイトリストを生成してマージしたものを返す
-    # @return [ActiveSupport::HashWithIndifferentAccess] ホワイトリスト
+    # Dynamically generate a whitelist and return a merged one.
+    # @return [ActiveSupport::HashWithIndifferentAccess]
     def execute!
       if keys_isnt_whitelisted?
         if keys_include_array?(@keys)
@@ -29,20 +29,20 @@ module FullMetalBody
 
     private
 
-    # ホワイトリストにキーの情報が載っていないかを確認する
-    # @return [Boolean] 載っていなければtrueを返す。載っていたらfalseを返す。
+    # Check to see if the keys are on the whitelist.
+    # @return [Boolean] (true, false)
     def keys_isnt_whitelisted?
       !@whitelist.dig(*@keys)
     end
 
-    # キー情報から配列が含まれているかを確認する
-    # @return [Boolean] 配列が含まれていたらtrueを返す。なければfalseを返す。
+    # Check to see if the keys contain the array index.
+    # @return [Boolean] (true, false)
     def keys_include_array?(keys)
       !!keys.find_index { |k| key_numeric?(k) }
     end
 
-    # valueの型情報を返す
-    # @return [String] 型情報
+    # Return type-definition of value.
+    # @return [String] Type-definition
     def type_definition_by_value
       case @value
       when Numeric
@@ -56,9 +56,10 @@ module FullMetalBody
       end
     end
 
-    # 動的に配列のホワイトリストを生成する
-    # @param [Array<String,Symbol>] keys キーの配列
-    # @option [Array<String,Symbol>] prefix_keys 配列がネストしていた場合に、上位キー情報を渡す
+    # Dynamically generate an array whitelist.
+    # @param [Array<String,Symbol>] keys
+    # @option [Array<String,Symbol>] prefix_keys
+    # @raise [DynamicWhitelistGenerator::ParseArrayError]
     def generate_whitelist_for_array(keys, prefix_keys = [])
       parent_keys, child_keys = separate_by_array_key(keys)
       parent_keys = prefix_keys + parent_keys
@@ -76,7 +77,6 @@ module FullMetalBody
         #     }
         #   }
         # }
-        # が、@whitelistにマージされる
         @whitelist.bury!((parent_keys + ['properties', 'type']), type_definition_by_value)
       elsif child_keys.size == 1 && !key_numeric?(child_keys.first)
         # keys = ["models", 0, "model_id"]
@@ -93,23 +93,21 @@ module FullMetalBody
         #     }
         #   }
         # }
-        # が、@whitelistにマージされる
         @whitelist.bury!((parent_keys + ['properties', child_keys.first, 'type']), type_definition_by_value)
       elsif keys_include_array?(child_keys)
-        # ケース1:シンプルな2次元配列
-        # 1周目
+        # case 1: 2D array
+        # Lap 1
         # keys = ["models", 0, 0]
         # prefix_keys # => []
         # parent_keys # => ["models"]
         # child_keys # => [0]
-        # まだ配列があるので再帰（ここ）に突入
         # generate_whitelist_for_array([0], ["models", "properties"])
-        #   2周目
+        #   Lap 2
         #   keys = [0]
         #   prefix_keys = ["models", "properties"]
         #   parent_keys = ["models", "properties"]
         #   child_keys = []
-        #   `if child_keys.empty?` に入る
+        #   Enter `if child_keys.empty?`
         #   {
         #     "models" => {
         #       "type" => "array",
@@ -121,22 +119,20 @@ module FullMetalBody
         #       }
         #     }
         #   }
-        #   が、@whitelistにマージされる
         #
-        # ケース2:配列内のオブジェクトが更に配列を持っている
-        # 1周目
+        # case 2: An object in an array has a further array.
+        # Lap 1
         # keys = ["models", 0, "model_ids", 0]
         # prefix_keys # => []
         # parent_keys # => ["models"]
         # child_keys # => ["model_ids", 0]
-        # まだ配列があるので再帰（ここ）に突入
         # generate_whitelist_for_array(["model_ids", 0], ["models", "properties"])
-        #   2周目
+        #   Lap 2
         #   keys = ["model_ids", 0]
         #   prefix_keys = ["models", "properties"]
         #   parent_keys = ["models", "properties", "model_ids"]
         #   child_keys = []
-        #   `if child_keys.empty?` に入る
+        #   Enter `if child_keys.empty?`
         #   {
         #     "models" => {
         #       "type" => "array",
@@ -150,22 +146,20 @@ module FullMetalBody
         #       }
         #     }
         #   }
-        #   が、@whitelistにマージされる
         #
-        # ケース3:配列内のオブジェクトが更に配列を持っていて、その中にオブジェクトがある
-        # 1周目
+        # case 3: The object in the array has a further array, and the object in the array
+        # Lap 1
         # keys = ["articles", 0, "comments", 0, "content"]
         # prefix_keys # => []
         # parent_keys # => ["articles"]
         # child_keys # => ["comments", 0, "content"]
-        # まだ配列があるので再帰（ここ）に突入
         # generate_whitelist_for_array(["comments", 0, "content"], ["articles", "properties"])
-        #   2周目
+        #   Lap 2
         #   keys = ["comments", 0, "content"]
         #   prefix_keys = ["articles", "properties"]
         #   parent_keys = ["articles", "properties", "comments"]
         #   child_keys = ["content"]
-        #   `elsif child_keys.size == 1 && !key_numeric?(child_keys.first)` に入る
+        #   Enter `elsif child_keys.size == 1 && !key_numeric?(child_keys.first)`
         #   {
         #     "articles" => {
         #       "type" => "array",
@@ -181,12 +175,10 @@ module FullMetalBody
         #       }
         #     }
         #   }
-        #   が、@whitelistにマージされる
-        #
-        # これより階層が深くでも再帰的に処理されるので問題なし
         generate_whitelist_for_array(child_keys, parent_keys + ['properties'])
       else
-        # ここにくるケースは通常ないと思うので、来たらわかるようにしておきたい
+        # Normally, there are no cases that come here.
+        # But if it should come, raise Exception.
         invalid_keys = prefix_keys + keys
         invalid_keys.delete('properties')
         raise DynamicWhitelistGenerator::ParseArrayError.new("Invalid keys", invalid_keys)

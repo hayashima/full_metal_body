@@ -44,7 +44,7 @@ module FullMetalBody
         end
 
         # cntrl
-        # 改行コードと水平タブを置換して消す（垂直タブはNG）
+        # Replace and delete line feed codes and horizontal tabs (vertical tabs are not)
         value = value.gsub(/\R|\t/, '')
         if /[[:cntrl:]]/.match?(value)
           record.errors.add(attribute, :include_cntrl, value: byteslice(value))

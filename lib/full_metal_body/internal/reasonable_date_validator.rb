@@ -12,8 +12,7 @@ module FullMetalBody
       end
 
       def date_valid?(str)
-        # スラッシュ区切りとハイフン区切りのみ許容
-        # 時間までの入力は作成時点ではない
+        # Allow only slash and hyphen separators
         unless str.match?(%r{^\d{4}/\d{1,2}/\d{1,2}$|^\d{4}-\d{1,2}-\d{1,2}$})
           return false
         end

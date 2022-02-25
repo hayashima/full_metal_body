@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateBlockedActions < ActiveRecord::Migration[7.0]
+class CreateBlockedActions < ActiveRecord::Migration[6.1]
 
   def change
     create_table :blocked_actions do |t|

@@ -34,6 +34,7 @@ controller_name:
 ### ホワイトリストのサンプル
 
 例えば、以下のように `Article` モデルのScaffoldを作成したとします。
+
 ```bash
 bin/rails g scaffold Article title:string content:text
 ```
@@ -74,12 +75,14 @@ articles:
     id:
       type: number
 ```
+
 ## 目次
 
 * [FullMetalBody](#fullmetalbody)
   * [目次](#目次)
   * [インストール](#インストール)
   * [使い方](#使い方)
+    * [マイグレーション](#マイグレーション)
     * [ApplicationControllerの修正](#ApplicationControllerの修正)
     * [ホワイトリストの雛形の作成](#ホワイトリストの雛形の作成)
     * [全てのパラメーターを許可したい場合](#全てのパラメーターを許可したい場合)
@@ -105,7 +108,7 @@ $ bundle install
 
 ## 使い方
 
-### migration
+### マイグレーション
 
 ホワイトリストに存在しないコントローラー、アクション、パラメーターキーをデータベースに保存するため、マイグレーションファイルを作ります。
 

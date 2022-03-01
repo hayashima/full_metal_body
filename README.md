@@ -84,6 +84,7 @@ articles:
         * [Modify ApplicationController](#modifyapplicationcontroller)
         * [Creating a whitelist template](#creatingawhitelisttemplate)
         * [If you want to allow all parameters](#ifyouwanttoallowallparameters)
+        * [Disable the unknown parameter count check](#disabletheunknownparameterscountcheck)
     * [Development](#development)
         * [Preparation](#preparation)
         * [Test](#test)
@@ -192,6 +193,15 @@ graphql:
 
 However, although all keys are allowed, to prevent attacks,
 the type will be inferred from the value and the input value will be validated with the default rules for that type.
+
+### Disable the unknown parameter count check
+
+FullMetalBody allows up to three unknown parameters by default.
+This is to allow room for errors in case unexpected parameters remain even after the whitelist is complete, but
+When the whitelist is in the process of being created, more than three parameters will be detected and an error will occur immediately.
+
+Therefore, it is recommended to disable the whitelist while it is being created.
+To disable it, set the environment variable `ENV['USE_WHITELIST_COUNT_CHECK']` to `0`.
 
 ## Development
 

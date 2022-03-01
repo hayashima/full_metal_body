@@ -9,7 +9,9 @@ class CreateActiveStorageTables < ActiveRecord::Migration[5.2]
       t.string   :filename,     null: false
       t.string   :content_type
       t.text     :metadata
-      t.string   :service_name, null: false
+      if Gem::Version.new(Rails.version) >= Gem::Version.new("6.1.0")
+        t.string   :service_name, null: false
+      end
       t.bigint   :byte_size,    null: false
       t.string   :checksum
 

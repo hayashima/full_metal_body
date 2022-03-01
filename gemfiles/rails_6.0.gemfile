@@ -7,6 +7,7 @@ gem "minitest-stub_any_instance"
 gem "net-smtp"
 gem "net-pop"
 gem "net-imap"
-gem "rails", "~> 7.0.1"
+gem "rails", "~> 6.0.0"
+gem "psych", "~> 3.3"
 
 gemspec path: "../"

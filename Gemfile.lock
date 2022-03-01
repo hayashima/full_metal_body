@@ -4,7 +4,7 @@ PATH
     full_metal_body (0.1.0)
       bury (>= 2.0.0)
       pg (~> 1.0)
-      rails (>= 5.2.0, < 7.1.0)
+      rails (>= 6.0.0, < 7.1.0)
 
 GEM
   remote: https://rubygems.org/

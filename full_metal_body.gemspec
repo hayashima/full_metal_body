@@ -22,4 +22,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pg", '~> 1.0'
   spec.add_dependency "bury", '>= 2.0.0'
   spec.add_development_dependency "appraisal"
+  spec.add_development_dependency "concurrent-ruby", '1.3.4'
 end

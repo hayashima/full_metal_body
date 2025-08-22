@@ -3,8 +3,8 @@ require_relative "lib/full_metal_body/version"
 Gem::Specification.new do |spec|
   spec.name        = "full_metal_body"
   spec.version     = FullMetalBody::VERSION
-  spec.authors     = ["Toyoaki Oko"]
-  spec.email       = ["chariderpato@gmail.com"]
+  spec.authors     = ["Toyoaki Oko", "tokai3594"]
+  spec.email       = ["chariderpato@gmail.com", "t-shinohara@rhizome-e.com"]
   spec.homepage    = "https://github.com/hayashima/full_metal_body"
   spec.summary     = "FullMetalBody is an input validation tool for ruby on rails."
   spec.description = "FullMetalBody is an input validation tool for ruby on rails."

@@ -4,7 +4,7 @@ PATH
     full_metal_body (0.2.0)
       bury (>= 2.0.0)
       pg (~> 1.0)
-      rails (>= 6.0.0, < 7.2.0)
+      rails (>= 6.0.0, < 8.2.0)
 
 GEM
   remote: https://rubygems.org/
@@ -221,6 +221,7 @@ DEPENDENCIES
   drb
   full_metal_body!
   image_processing (>= 1.2)
+  minitest (~> 5.0)
   minitest-stub_any_instance
   mutex_m
   net-imap

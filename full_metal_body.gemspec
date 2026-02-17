@@ -18,12 +18,14 @@ Gem::Specification.new do |spec|
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 
-  spec.add_dependency "rails", '< 7.2.0', '>= 6.0.0'
+  spec.add_dependency "rails", '< 8.2.0', '>= 6.0.0'
   spec.add_dependency "pg", '~> 1.0'
   spec.add_dependency "bury", '>= 2.0.0'
-  spec.add_development_dependency "appraisal"
+  spec.add_development_dependency "appraisal", '~> 2.0'
   spec.add_development_dependency "concurrent-ruby", '1.3.4'
-  spec.add_development_dependency "mutex_m"
-  spec.add_development_dependency "bigdecimal"
-  spec.add_development_dependency "drb"
+  spec.add_development_dependency "mutex_m", '~> 0.1'
+  spec.add_development_dependency "bigdecimal", '~> 3.0'
+  spec.add_development_dependency "drb", '~> 2.0'
+  spec.add_development_dependency "minitest", '~> 5.26'
+  spec.add_development_dependency "benchmark", '~> 0.1'
 end

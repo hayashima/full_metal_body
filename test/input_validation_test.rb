@@ -64,6 +64,34 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     it_is_invalid_with_whitelist
   end
 
+  test 'it should be succeeded when string pattern matches.' do
+    @keys = ['key']
+    @value = 'AB1234'
+    @whitelist = {
+      'key' => {
+        'type' => 'string',
+        'options' => {
+          'pattern' => '[A-Z]{2}[0-9]{4}'
+        }
+      }
+    }
+    it_is_valid_with_whitelist
+  end
+
+  test 'it should be failed when string does not fully match pattern.' do
+    @keys = ['key']
+    @value = 'prefix-AB1234-suffix'
+    @whitelist = {
+      'key' => {
+        'type' => 'string',
+        'options' => {
+          'pattern' => '[A-Z]{2}[0-9]{4}'
+        }
+      }
+    }
+    it_is_invalid_with_whitelist
+  end
+
   test 'it should be succeeded when keys are simple array.' do
     @keys = %w(key 1)
     @value = 'value'

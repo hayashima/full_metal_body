@@ -63,10 +63,11 @@ module FullMetalBody
           "'full_metal_body/internal/input_string': true, numericality: #{options}"
         end
       when 'date'
+        options = @key_type['options']&.symbolize_keys || true
         if @value.is_a?(Date)
-          "'full_metal_body/internal/reasonable_date': true"
+          "'full_metal_body/internal/reasonable_date': #{options}"
         else
-          "'full_metal_body/internal/input_string': true, 'full_metal_body/internal/reasonable_date': true"
+          "'full_metal_body/internal/input_string': true, 'full_metal_body/internal/reasonable_date': #{options}"
         end
       when 'file'
         options = @key_type['options']&.symbolize_keys || true

@@ -340,6 +340,21 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     }
     it_is_invalid_with_whitelist
   end
+
+  test 'it should be succeeded when date options match the value' do
+    set_date_validation('2020-02-29', 'format' => '%Y-%m-%d', 'minimum' => '2000-01-01', 'maximum' => '2099-12-31')
+    it_is_valid_with_whitelist
+  end
+
+  test 'it should be failed when date options reject the value' do
+    set_date_validation('1999-12-31', 'format' => '%Y-%m-%d', 'minimum' => '2000-01-01')
+    it_is_invalid_with_whitelist
+  end
+
+  test 'it should be failed when value exceeds the configured maximum date' do
+    set_date_validation('2100-01-01', 'format' => '%Y-%m-%d', 'maximum' => '2099-12-31')
+    it_is_invalid_with_whitelist
+  end
   #
   # Date: end
   #
@@ -543,6 +558,15 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     @keys = ['key']
     @value = value
     definition = { 'type' => 'number' }
+    definition['options'] = options if options
+    @whitelist = { 'key' => definition }
+    @subject = nil
+  end
+
+  def set_date_validation(value, options = nil)
+    @keys = ['key']
+    @value = value
+    definition = { 'type' => 'date' }
     definition['options'] = options if options
     @whitelist = { 'key' => definition }
     @subject = nil

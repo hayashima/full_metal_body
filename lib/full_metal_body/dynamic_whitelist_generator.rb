@@ -17,7 +17,7 @@ module FullMetalBody
     # Dynamically generate a whitelist and return a merged one.
     # @return [ActiveSupport::HashWithIndifferentAccess]
     def execute!
-      if keys_isnt_whitelisted?
+      if keys_isnt_whitelisted? && !array_element_type_defined?
         if keys_include_array?(@keys)
           generate_whitelist_for_array(@keys)
         else
@@ -33,6 +33,29 @@ module FullMetalBody
     # @return [Boolean] (true, false)
     def keys_isnt_whitelisted?
       !@whitelist.dig(*@keys)
+    end
+
+    def array_element_type_defined?
+      return false unless keys_include_array?(@keys)
+
+      type_definition = type_definition_for(@whitelist, @keys)
+      type_definition.is_a?(Hash) && %w(string number date file boolean).include?(type_definition['type'])
+    end
+
+    def type_definition_for(definition, keys)
+      return unless definition.is_a?(Hash)
+      return definition if keys.empty?
+
+      if definition['type'] == 'array'
+        return unless key_numeric?(keys.first)
+
+        type_definition_for(definition['properties'], keys.drop(1))
+      else
+        key = keys.first
+        child = definition[key] || definition[key.to_s]
+        child ||= definition[key.to_sym] if key.is_a?(String)
+        type_definition_for(child, keys.drop(1))
+      end
     end
 
     # Check to see if the keys contain the array index.

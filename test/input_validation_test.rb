@@ -170,6 +170,24 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
   #
   # Number: start
   #
+  test 'preserves declared numeric array element types under permit all' do
+    @keys = %w(article scores 0)
+    @value = 'not-a-number'
+    @whitelist = {
+      'article' => {
+        '_permit_all' => true,
+        'scores' => {
+          'type' => 'array',
+          'properties' => { 'type' => 'number' },
+        },
+      },
+    }
+    @whitelist = FullMetalBody::DynamicWhitelistGenerator.new(@keys, @value, @whitelist).execute!
+
+    it_is_invalid_with_whitelist
+    assert_equal 'number', subject.key_type['type']
+  end
+
   test 'accepts integer strings as numbers' do
     set_number_validation('12345')
     it_is_valid_with_whitelist

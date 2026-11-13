@@ -58,6 +58,45 @@ class FullMetalBody::DynamicWhitelistGeneratorTest < ActiveSupport::TestCase
                  }, subject)
   end
 
+  test 'does not overwrite the declared type and options of array elements' do
+    @keys = %w(article scores 0)
+    @value = 'not-a-number'
+    @whitelist = {
+      'article' => {
+        '_permit_all' => true,
+        'scores' => {
+          'type' => 'array',
+          'properties' => {
+            'type' => 'number',
+            'options' => { 'greater_than' => 0 },
+          },
+        },
+      },
+    }
+
+    result = subject.dig('article', 'scores', 'properties')
+    assert_equal 'number', result['type']
+    assert_equal({ 'greater_than' => 0 }, result['options'])
+  end
+
+  test 'does not overwrite declared types of properties in array elements' do
+    @keys = %w(article items 0 quantity)
+    @value = 'not-a-number'
+    @whitelist = {
+      'article' => {
+        '_permit_all' => true,
+        'items' => {
+          'type' => 'array',
+          'properties' => {
+            'quantity' => { 'type' => 'number' },
+          },
+        },
+      },
+    }
+
+    assert_equal 'number', subject.dig('article', 'items', 'properties', 'quantity', 'type')
+  end
+
   test 'keys should registered whitelist when keys include integer of string and the last key type is string.' do
     @keys = %w(article comments 0 id)
     @value = 1

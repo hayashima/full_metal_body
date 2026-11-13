@@ -114,6 +114,123 @@ class ArticlesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to article_url(Article.last)
   end
 
+  test "should create article with nested parameters when permit all is enabled" do
+    whitelist = {
+      'article' => {
+        '_permit_all' => true,
+      },
+    }
+
+    stub_whitelist(ArticlesController, whitelist) do
+      assert_difference -> { Article.count } => 1,
+                        -> { FullMetalBody::BlockedAction.count } => 0,
+                        -> { FullMetalBody::BlockedKey.count } => 0 do
+        post articles_url, params: {
+          article: {
+            title: 'Title',
+            content: 'Content',
+            metadata: {
+              source: 'api',
+              published: true,
+            },
+            tags: ['one', 'two'],
+          },
+        }
+      end
+    end
+
+    assert_redirected_to article_url(Article.last)
+  end
+
+  test "should validate mixed array elements independently when permit all is enabled" do
+    whitelist = {
+      'article' => {
+        '_permit_all' => true,
+      },
+    }
+
+    stub_whitelist(ArticlesController, whitelist) do
+      post articles_url, as: :json, params: {
+        article: {
+          title: 'Title',
+          content: 'Content',
+          values: [1, 'text'],
+        },
+      }
+    end
+
+    assert_redirected_to article_url(Article.last)
+  end
+
+  test "should enforce declared array element types under permit all" do
+    whitelist = {
+      'article' => {
+        '_permit_all' => true,
+        'scores' => {
+          'type' => 'array',
+          'properties' => { 'type' => 'number' },
+        },
+      },
+    }
+
+    stub_whitelist(ArticlesController, whitelist) do
+      assert_no_difference -> { Article.count } do
+        post articles_url, params: {
+          article: {
+            title: 'Title',
+            content: 'Content',
+            scores: ['1', 'not-a-number'],
+          },
+        }
+      end
+    end
+
+    assert_response :bad_request
+  end
+
+  test "should return bad request for invalid values under permit all without creating an article" do
+    whitelist = {
+      'article' => {
+        '_permit_all' => true,
+      },
+    }
+
+    stub_whitelist(ArticlesController, whitelist) do
+      assert_no_difference -> { Article.count } do
+        post articles_url, params: {
+          article: {
+            title: "Invalid\bTitle",
+            content: 'Content',
+          },
+        }
+      end
+    end
+
+    assert_response :bad_request
+  end
+
+  test "should return bad request for invalid whitelisted values without creating an article" do
+    whitelist = {
+      'article' => {
+        'title' => { 'type' => 'string' },
+        'content' => { 'type' => 'string' },
+      },
+    }
+
+    stub_whitelist(ArticlesController, whitelist) do
+      assert_no_difference -> { Article.count } do
+        post articles_url, params: {
+          article: {
+            title: "Invalid\bTitle",
+            content: 'Content',
+          },
+        }
+      end
+    end
+
+    assert_response :bad_request
+  end
+
   test "should show article" do
     assert_difference -> { FullMetalBody::BlockedAction.count } => 1 do
       get article_url(@article)

@@ -2,9 +2,9 @@
 
 [![Test](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml/badge.svg)](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml)
 
-フルメタルボディは、before_actionの段階で入力値検証を行うためのRails Pluginです。
+フルメタルボディは、`before_action`の段階でリクエストパラメーターの値を検証するRailsプラグインです。
 
-YAMLファイルにパラメーターのホワイトリストを記述し、許可されたキーと値の場合のみ、通過できます。
+YAMLファイルにパラメーターのホワイトリストを記述すると、記載されたパラメーターの値を検証します。
 
 しかし、それ以外の場合、例えば制御文字入りの文字列やオーバーフロー狙いの大量の文字列などを検知した場合は即座に `400 Bad Request` を返します。
 
@@ -17,7 +17,7 @@ YAMLファイルにパラメーターのホワイトリストを記述し、許�
 controller_name:
   action_name:
     parameter_name:
-      type: (string|number|date|boolean)
+      type: (string|number|date|boolean|file)
       options:
         validator_option1: (value)
         validator_option2: (value)
@@ -25,7 +25,7 @@ controller_name:
       type: array
       properties:
         parameter_name:
-          type: (string|number|date|boolean)
+          type: (string|number|date|boolean|file)
           options:
             validator_option1: (value)
             validator_option2: (value)
@@ -84,6 +84,7 @@ articles:
   * [使い方](#使い方)
     * [マイグレーション](#マイグレーション)
     * [ApplicationControllerの修正](#ApplicationControllerの修正)
+    * [入力値の検証オプション](#入力値の検証オプション)
     * [ホワイトリストの雛形の作成](#ホワイトリストの雛形の作成)
     * [全てのパラメーターを許可したい場合](#全てのパラメーターを許可したい場合)
     * [不明なパラメーター数チェックを無効にする](#不明なパラメーター数チェックを無効にする)
@@ -135,6 +136,28 @@ class ApplicationController < ActionController::Base
 end
 ```
 
+### 入力値の検証オプション
+
+FullMetalBodyは値を検証しますが、RailsのStrong Parametersの代わりにはなりません。`params`からキーを削除しないため、一括代入に渡す属性は`permit`で制御してください。また、値の型は変換しません。例えば、`"123"`は`number`の検証に通っても文字列のままです。
+
+リクエストに含まれる値だけを検証します。必須項目や、値が配列・ハッシュであることはアプリケーション側で検証してください。型ごとのオプションは`options`に指定します。
+
+| 型 | オプションとデフォルト |
+| --- | --- |
+| `string` | `max_length`のデフォルトは`1024`文字です。`pattern`は値全体に一致させます。 |
+| `number` | Active Modelの数値検証オプションを指定できます。オプションを省略すると空値を許可します。 |
+| `date` | `format`を省略すると、`YYYY/M/D`または`YYYY-M-D`形式の有効な日付を受け付けます。`minimum`と`maximum`は両端を含みます。 |
+| `boolean` | `true_values`と`false_values`は文字列配列で指定します。空値を許可するには`allow_blank: true`を指定します。 |
+| `file` | `content_type`は文字列または配列で、デフォルトは`*`です。`file_size`はデフォルトで100 MiBです。`allowed_extensions`でファイル名のサフィックスを制限します。 |
+
+追加の注意点:
+
+- `string`は有効なUTF-8である必要があります。改行と水平タブ以外の制御文字は拒否します。`pattern`には`/.../`ではなくRuby正規表現を文字列で指定してください。
+- `date`の`format`には`'%Y-%m-%d'`のようなRubyの`Date`形式を指定します。`minimum`と`maximum`は引用符で囲んだISO 8601形式にしてください。
+- `boolean`はデフォルトで`true`、`false`および`"1"`、`"t"`、`"T"`、`"true"`、`"TRUE"`、`"on"`、`"ON"`、`"0"`、`"f"`、`"F"`、`"false"`、`"FALSE"`、`"off"`、`"OFF"`を受け付けます。独自値を設定してもBooleanの`true`と`false`は受け付けます。
+- `file`の`content_type`は申告された値を確認し、ファイルの実データは確認しません。`allowed_extensions`は大文字小文字を区別せず、`.tar.gz`のような複合サフィックスにも対応します。空配列は全ファイルを拒否し、`nil`は拡張子を制限しません。
+- `number`、`date`、`boolean`に文字列を渡すと、デフォルトの`string`ルールでも検証します。
+
 ### ホワイトリストの雛形の作成
 
 自分でホワイトリストを書いていくこともできますが、大変な作業となります。
@@ -156,7 +179,7 @@ articles:
 
 この内容を `config/whitelist/articles.yml` にコピーした後に再びアクセスすると、例外は起きなくなります。
 この作業を各アクション毎に繰り返し行うことで、ホワイトリストを作っていきます。
-デフォルトでは全て `string` として生成されますので、パラメーターに合った型(string|number|date|boolean)に変更してください。
+デフォルトでは全て `string` として生成されますので、パラメーターに合った型(string|number|date|boolean|file)に変更してください。
 
 雛形にはアクション毎にパラメーターが随時マージされていきますので、削除しなくても問題ありません。
 例えば、この後に `DELETE article_path(@article)` にアクセスしたとすると、 `tmp/whitelist/articles.yml` は以下のようになります。
@@ -193,6 +216,7 @@ graphql:
 ```
 
 ただし、キーに関しては全て許可するものの、攻撃を防ぐため、値から型を推測し、その型のデフォルトのルールで入力値を検証します。
+配列要素の型を含め、既存の定義があれば型とオプションを保持します。要素の型が未定義の配列では、各要素の値から個別に型を推測します。
 
 ### 不明なパラメーター数チェックを無効にする
 

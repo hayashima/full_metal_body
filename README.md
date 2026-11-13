@@ -2,9 +2,9 @@
 
 [![Test](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml/badge.svg)](https://github.com/hayashima/full_metal_body/actions/workflows/test.yml)
 
-FullMetalBody is a Rails Plugin for input validation in the before_action stage.
+FullMetalBody is a Rails plugin for validating request parameter values in the `before_action` stage.
 
-If you write a whitelist of parameters in a YAML file, only allowed keys and values will be passed through.
+Write a parameter whitelist in a YAML file and FullMetalBody will validate the values of the listed parameters.
 
 However, in other cases, for example, if it detects a string with control characters or a large number of strings aiming for overflow, it will immediately return `400 Bad Request`.
 
@@ -15,7 +15,7 @@ However, in other cases, for example, if it detects a string with control charac
 controller_name:
   action_name:
     parameter_name:
-      type: (string|number|date|boolean)
+      type: (string|number|date|boolean|file)
       options:
         validator_option1: (value)
         validator_option2: (value)
@@ -23,7 +23,7 @@ controller_name:
       type: array
       properties:
         parameter_name:
-          type: (string|number|date|boolean)
+          type: (string|number|date|boolean|file)
           options:
             validator_option1: (value)
             validator_option2: (value)
@@ -82,6 +82,7 @@ articles:
     * [Usage](#usage)
         * [Migration](#migration)
         * [Modify ApplicationController](#modifyapplicationcontroller)
+        * [Validation options](#validation-options)
         * [Creating a whitelist template](#creatingawhitelisttemplate)
         * [If you want to allow all parameters](#ifyouwanttoallowallparameters)
         * [Disable the unknown parameter count check](#disabletheunknownparameterscountcheck)
@@ -133,6 +134,30 @@ class ApplicationController < ActionController::Base
 end
 ```
 
+### Validation options
+
+FullMetalBody validates values but does not replace Rails Strong Parameters or remove keys from `params`. Use `permit` to control which attributes can be passed to mass assignment. Validation does not convert values to the declared type; for example, `"123"` remains a string after passing `number` validation.
+
+Only values present in the request are validated. Required fields and value structure (such as whether a value is an array or hash) must be checked separately in the application.
+
+Place type-specific options under `options`.
+
+| Type | Options and defaults |
+| --- | --- |
+| `string` | `max_length` defaults to `1024` characters. `pattern` must match the entire value. |
+| `number` | Accepts Active Model numericality options such as `only_integer`, `greater_than`, and `less_than`. Blank values are allowed when no options are specified. |
+| `date` | Without `format`, accepts valid `YYYY/M/D` or `YYYY-M-D` dates. `minimum` and `maximum` set inclusive bounds. |
+| `boolean` | `true_values` and `false_values` customize accepted strings and must be arrays of strings. `allow_blank: true` allows blank values. |
+| `file` | `content_type` accepts a string or array and defaults to `*`. `file_size` defaults to 100 MiB. `allowed_extensions` restricts filename suffixes. |
+
+Additional details:
+
+* Strings must be valid UTF-8. Control characters are rejected except line breaks and horizontal tabs. Specify `pattern` as a Ruby regular expression string, not a `/.../` literal.
+* For dates, `format` uses Ruby `Date` directives, such as `'%Y-%m-%d'`. Quote ISO 8601 strings used for `minimum` and `maximum`.
+* Boolean values are `true`, `false`, and the strings `"1"`, `"t"`, `"T"`, `"true"`, `"TRUE"`, `"on"`, `"ON"`, `"0"`, `"f"`, `"F"`, `"false"`, `"FALSE"`, `"off"`, or `"OFF"` by default. Native `true` and `false` remain accepted when custom values are configured.
+* `content_type` checks the upload's declared value, not the file contents. `allowed_extensions` is case-insensitive; an empty array rejects all files, while `nil` leaves the extension unrestricted. Compound suffixes such as `.tar.gz` are supported.
+* String values for `number`, `date`, and `boolean` are also checked by the default string rules.
+
 ### Creating a whitelist template
 
 You can write your own whitelist, but that's a lot of work.
@@ -155,7 +180,7 @@ articles:
 
 If you copy the contents to `config/whitelist/articles.yml` and then access it again, the exception will not occur.
 By repeating this process for each action, we can create a whitelist.
-By default, the whitelist is generated as `string`, so change the type to match the parameters (string|number|date|boolean).
+By default, the whitelist is generated as `string`, so change the type to match the parameters (string|number|date|boolean|file).
 
 Parameters will be merged into the template as needed for each action, so you don't have to delete them.
 For example, if you access `DELETE article_path(@article)` after this, `tmp/whitelist/articles.yml` will look like this
@@ -193,6 +218,7 @@ graphql:
 
 However, although all keys are allowed, to prevent attacks,
 the type will be inferred from the value and the input value will be validated with the default rules for that type.
+Existing definitions, including array element types and options, are preserved. For arrays without a declared element type, each element's type is inferred from its own value.
 
 ### Disable the unknown parameter count check
 

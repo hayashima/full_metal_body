@@ -34,15 +34,13 @@ module FullMetalBody
         next if RAILS_KEYS.include?(key.join('.'))
 
         value = params.dig(*key)
-        if permit_all_params?(key, whitelist)
-          dynamic_whitelist_generator = DynamicWhitelistGenerator.new(key, value, whitelist)
-          whitelist = dynamic_whitelist_generator.execute!
-          # rubocop:disable Lint/UselessAssignment
-          dynamic_whitelist_generator = nil
-          # rubocop:enable Lint/UselessAssignment
+        validation_whitelist = if permit_all_params?(key, whitelist)
+          DynamicWhitelistGenerator.new(key, value, whitelist.deep_dup).execute!
+        else
+          whitelist
         end
 
-        valid, result = validate_each(key, value, whitelist)
+        valid, result = validate_each(key, value, validation_whitelist)
         if valid
           if result.nil? && !permit_all_params?(key, whitelist)
             record_blocked_key(key.join('.'))

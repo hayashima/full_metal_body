@@ -10,6 +10,21 @@ module FullMetalBody
           value = options[:max_length]
           raise ArgumentError, ":max_length must be a non-negative Integer" unless value.is_a?(Integer) && value >= 0
         end
+
+        return unless options.key?(:pattern)
+
+        value = options[:pattern]
+        raise ArgumentError, ":pattern must be a String" unless value.is_a?(String)
+
+        Regexp.new(value)
+        @pattern =
+          begin
+            Regexp.new("\\A(?:#{value})\\z")
+          rescue RegexpError
+            Regexp.new("\\A(?:#{value}\n)\\z")
+          end
+      rescue RegexpError => error
+        raise ArgumentError, ":pattern must be a valid regular expression (#{error.message})"
       end
 
       def validate_each(record, attribute, value)
@@ -41,6 +56,10 @@ module FullMetalBody
         original_encoding = value.encoding.name
         unless value.force_encoding('UTF-8').valid_encoding?
           return record.errors.add(attribute, :wrong_encoding, value: byteslice(value), encoding: original_encoding)
+        end
+
+        if @pattern && !@pattern.match?(value)
+          record.errors.add(attribute, :invalid_format, value: byteslice(value))
         end
 
         # cntrl

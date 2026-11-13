@@ -30,6 +30,60 @@ class FullMetalBody::Internal::ReasonableDateValidatorTest < ActiveSupport::Test
     assert subject.valid?
   end
 
+  test 'it should passed when value matches the configured format exactly.' do
+    @value = '2020/02/29'
+    @options = { format: '%Y/%m/%d' }
+    assert subject.valid?
+  end
+
+  test 'it should not passed when value does not match the configured format exactly.' do
+    @value = '2020/2/29'
+    @options = { format: '%Y/%m/%d' }
+    assert_not subject.valid?
+  end
+
+  test 'it should not passed when value matches the format but is a non-existent date.' do
+    @value = '2020/02/31'
+    @options = { format: '%Y/%m/%d' }
+    assert_not subject.valid?
+  end
+
+  test 'it should passed when value equals the configured minimum date.' do
+    @value = '2000-01-01'
+    @options = { minimum: '2000-01-01' }
+    assert subject.valid?
+  end
+
+  test 'it should not passed when value is earlier than the configured minimum date.' do
+    @value = '1999-12-31'
+    @options = { minimum: '2000-01-01' }
+    assert_not subject.valid?
+  end
+
+  test 'it should passed when value equals the configured maximum date.' do
+    @value = '2099-12-31'
+    @options = { maximum: '2099-12-31' }
+    assert subject.valid?
+  end
+
+  test 'it should not passed when value is later than the configured maximum date.' do
+    @value = '2100-01-01'
+    @options = { maximum: '2099-12-31' }
+    assert_not subject.valid?
+  end
+
+  test 'it should not passed when configured bounds reject Date values.' do
+    @value = Date.new(1999, 12, 31)
+    @options = { minimum: '2000-01-01' }
+    assert_not subject.valid?
+  end
+
+  test 'it should passed when Date value is within configured bounds.' do
+    @value = Date.new(2020, 1, 1)
+    @options = { minimum: '2000-01-01', maximum: '2099-12-31' }
+    assert subject.valid?
+  end
+
   test 'it should passed when value is nil.' do
     @value = nil
     @options = nil
@@ -63,7 +117,7 @@ class FullMetalBody::Internal::ReasonableDateValidatorTest < ActiveSupport::Test
     assert subject.errors.of_kind?(:attribute, :not_reasonable_date)
   end
 
-  test 'it should not passed when value is string' do
+  test 'it should not passed when value is string.' do
     @value = 'あいうえお'
     @options = nil
     assert_not subject.valid?
@@ -112,7 +166,7 @@ class FullMetalBody::Internal::ReasonableDateValidatorTest < ActiveSupport::Test
     assert subject.errors.of_kind?(:attribute, :not_reasonable_date)
   end
 
-  test 'it should not passed when value is contains japanese era.' do
+  test 'it should not passed when value contains japanese era.' do
     @value = '昭和64.01.01'
     @options = nil
     assert_not subject.valid?

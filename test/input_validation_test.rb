@@ -64,6 +64,34 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     it_is_invalid_with_whitelist
   end
 
+  test 'it should be succeeded when string pattern matches.' do
+    @keys = ['key']
+    @value = 'AB1234'
+    @whitelist = {
+      'key' => {
+        'type' => 'string',
+        'options' => {
+          'pattern' => '[A-Z]{2}[0-9]{4}'
+        }
+      }
+    }
+    it_is_valid_with_whitelist
+  end
+
+  test 'it should be failed when string does not fully match pattern.' do
+    @keys = ['key']
+    @value = 'prefix-AB1234-suffix'
+    @whitelist = {
+      'key' => {
+        'type' => 'string',
+        'options' => {
+          'pattern' => '[A-Z]{2}[0-9]{4}'
+        }
+      }
+    }
+    it_is_invalid_with_whitelist
+  end
+
   test 'it should be succeeded when keys are simple array.' do
     @keys = %w(key 1)
     @value = 'value'
@@ -142,88 +170,164 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
   #
   # Number: start
   #
-  test 'it should be succeeded when value type is integer' do
-    @keys = ['key']
-    @value = '12345'
+  test 'preserves declared numeric array element types under permit all' do
+    @keys = %w(article scores 0)
+    @value = 'not-a-number'
     @whitelist = {
-      'key' => {
-        'type' => 'number',
-      },
-    }
-    it_is_valid_with_whitelist
-  end
-
-  test 'it should be succeeded when value type is float' do
-    @keys = ['key']
-    @value = '12345.67'
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-      },
-    }
-    it_is_valid_with_whitelist
-  end
-
-  test 'it should be succeeded when value is empty' do
-    @keys = ['key']
-    @value = ''
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-      },
-    }
-    it_is_valid_with_whitelist
-  end
-
-  test 'it should be succeeded when value is nil' do
-    @keys = ['key']
-    @value = nil
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-      },
-    }
-    it_is_valid_with_whitelist
-  end
-
-  test 'it should be succeeded when value is greater than 4 and even' do
-    @keys = ['key']
-    @value = '6'
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-        'options' => {
-          'even' => true,
-          'greater_than' => 4
+      'article' => {
+        '_permit_all' => true,
+        'scores' => {
+          'type' => 'array',
+          'properties' => { 'type' => 'number' },
         },
       },
     }
+    @whitelist = FullMetalBody::DynamicWhitelistGenerator.new(@keys, @value, @whitelist).execute!
+
+    it_is_invalid_with_whitelist
+    assert_equal 'number', subject.key_type['type']
+  end
+
+  test 'accepts integer strings as numbers' do
+    set_number_validation('12345')
     it_is_valid_with_whitelist
   end
 
-  test 'it should be failed when value is not a number' do
-    @keys = ['key']
-    @value = '0x192'
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-      },
-    }
+  test 'accepts decimal strings as numbers' do
+    set_number_validation('12345.67')
+    it_is_valid_with_whitelist
+  end
+
+  test 'allows empty strings by default' do
+    set_number_validation('')
+    it_is_valid_with_whitelist
+  end
+
+  test 'allows nil values by default' do
+    set_number_validation(nil)
+    it_is_valid_with_whitelist
+  end
+
+  test 'accepts values above the strict lower bound' do
+    set_number_validation('6', 'greater_than' => 4)
+    it_is_valid_with_whitelist
+  end
+
+  test 'accepts the inclusive lower bound' do
+    set_number_validation('1', 'greater_than_or_equal_to' => 1)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects values below the inclusive lower bound' do
+    set_number_validation('0', 'greater_than_or_equal_to' => 1)
     it_is_invalid_with_whitelist
   end
 
-  test 'it should be failed when value is 4' do
-    @keys = ['key']
-    @value = '4'
-    @whitelist = {
-      'key' => {
-        'type' => 'number',
-        'options' => {
-          'even' => true,
-          'greater_than' => 4
-        },
-      },
-    }
+  test 'accepts the inclusive upper bound' do
+    set_number_validation('100', 'less_than_or_equal_to' => 100)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects values above the inclusive upper bound' do
+    set_number_validation('101', 'less_than_or_equal_to' => 100)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'rejects decimal strings when only_integer is enabled' do
+    set_number_validation('1.5', 'only_integer' => true)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'rejects strings that are not numbers' do
+    set_number_validation('0x192')
+    it_is_invalid_with_whitelist
+  end
+
+  test 'rejects a value equal to the strict lower bound' do
+    set_number_validation('4', 'greater_than' => 4)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts values equal to the equal_to constraint' do
+    set_number_validation('5', 'equal_to' => 5)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects values unequal to the equal_to constraint' do
+    set_number_validation('4', 'equal_to' => 5)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts values below the strict upper bound' do
+    set_number_validation('5', 'less_than' => 6)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects a value equal to the strict upper bound' do
+    set_number_validation('6', 'less_than' => 6)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts values different from the other_than constraint' do
+    set_number_validation('5', 'other_than' => 4)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects values equal to the other_than constraint' do
+    set_number_validation('4', 'other_than' => 4)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts even values when even is required' do
+    set_number_validation('6', 'even' => true)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects odd values when even is required' do
+    set_number_validation('5', 'even' => true)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts odd values when odd is required' do
+    set_number_validation('5', 'odd' => true)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects even values when odd is required' do
+    set_number_validation('6', 'odd' => true)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts Numeric instances as number values' do
+    set_number_validation(123)
+    it_is_valid_with_whitelist
+  end
+
+  test 'accepts values within the numericality range' do
+    skip_unless_active_model_version('7.0')
+
+    set_number_validation('50', 'in' => 1..100)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects values outside the numericality range' do
+    skip_unless_active_model_version('7.0')
+
+    set_number_validation('101', 'in' => 1..100)
+    it_is_invalid_with_whitelist
+  end
+
+  test 'accepts Numeric instances when only_numeric is enabled' do
+    skip_unless_active_model_version('7.1')
+
+    set_number_validation(123, 'only_numeric' => true)
+    it_is_valid_with_whitelist
+  end
+
+  test 'rejects String values when only_numeric is enabled' do
+    skip_unless_active_model_version('7.1')
+
+    set_number_validation('123', 'only_numeric' => true)
     it_is_invalid_with_whitelist
   end
   #
@@ -252,6 +356,21 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
         'type' => 'date',
       },
     }
+    it_is_invalid_with_whitelist
+  end
+
+  test 'it should be succeeded when date options match the value' do
+    set_date_validation('2020-02-29', 'format' => '%Y-%m-%d', 'minimum' => '2000-01-01', 'maximum' => '2099-12-31')
+    it_is_valid_with_whitelist
+  end
+
+  test 'it should be failed when date options reject the value' do
+    set_date_validation('1999-12-31', 'format' => '%Y-%m-%d', 'minimum' => '2000-01-01')
+    it_is_invalid_with_whitelist
+  end
+
+  test 'it should be failed when value exceeds the configured maximum date' do
+    set_date_validation('2100-01-01', 'format' => '%Y-%m-%d', 'maximum' => '2099-12-31')
     it_is_invalid_with_whitelist
   end
   #
@@ -305,6 +424,39 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
       @subject = nil
     end
   end
+
+  test 'it should be succeeded when configured boolean values are used' do
+    @keys = ['key']
+    @whitelist = {
+      'key' => {
+        'type' => 'boolean',
+        'options' => {
+          'true_values' => ['yes'],
+          'false_values' => ['no'],
+        },
+      },
+    }
+    ['yes', 'no', true, false].each do |bool|
+      @value = bool
+      it_is_valid_with_whitelist
+      @subject = nil
+    end
+  end
+
+  test 'it should be failed when boolean value is not in the configured values' do
+    @keys = ['key']
+    @value = 'true'
+    @whitelist = {
+      'key' => {
+        'type' => 'boolean',
+        'options' => {
+          'true_values' => ['yes'],
+          'false_values' => ['no'],
+        },
+      },
+    }
+    it_is_invalid_with_whitelist
+  end
   #
   # Boolean: end
   #
@@ -339,6 +491,22 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     @value = upload_text(file_size: 101.megabytes)
     @whitelist = nil
     it_is_invalid_without_whitelist
+  end
+
+  test 'it should be succeeded when file extension matches configured options.' do
+    @keys = ['key']
+    @value = upload_image
+    @whitelist = {
+      'key' => {
+        'type' => 'file',
+        'options' => {
+          'content_type' => 'image/png',
+          'file_size' => 1.megabyte,
+          'allowed_extensions' => ['.png'],
+        },
+      },
+    }
+    it_is_valid_with_whitelist
   end
   #
   # File: end
@@ -451,6 +619,30 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
   def it_is_invalid_without_whitelist
     assert_not subject.valid?
     assert_nil(subject.key_type)
+  end
+
+  def set_number_validation(value, options = nil)
+    @keys = ['key']
+    @value = value
+    definition = { 'type' => 'number' }
+    definition['options'] = options if options
+    @whitelist = { 'key' => definition }
+    @subject = nil
+  end
+
+  def set_date_validation(value, options = nil)
+    @keys = ['key']
+    @value = value
+    definition = { 'type' => 'date' }
+    definition['options'] = options if options
+    @whitelist = { 'key' => definition }
+    @subject = nil
+  end
+
+  def skip_unless_active_model_version(minimum_version)
+    current_version = Gem::Version.new(ActiveModel::VERSION::STRING)
+    required_version = Gem::Version.new(minimum_version)
+    skip "requires ActiveModel #{minimum_version}+" if current_version < required_version
   end
 
   def set_dynamic_whitelist

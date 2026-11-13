@@ -39,6 +39,44 @@ class FullMetalBody::Internal::InputStringValidatorTest < ActiveSupport::TestCas
     assert_not subject.valid?
   end
 
+  test 'it should pass when value matches pattern' do
+    @value = 'AB1234'
+    @options = { pattern: '[A-Z]{2}[0-9]{4}' }
+    assert subject.valid?
+  end
+
+  test 'it should pass when value matches an extended pattern with a trailing comment' do
+    @value = 'AB1234'
+    @options = { pattern: '(?x)[A-Z]{2}[0-9]{4} # identifier' }
+    assert subject.valid?
+  end
+
+  test 'it should fail when value does not match the entire pattern' do
+    @value = 'prefix-AB1234-suffix'
+    @options = { pattern: '[A-Z]{2}[0-9]{4}' }
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_format)
+  end
+
+  test 'it should fail when a line break interrupts the pattern' do
+    @value = "AB\n1234"
+    @options = { pattern: '[A-Z]{2}[0-9]{4}' }
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_format)
+  end
+
+  test 'it should raise when pattern is not a string' do
+    @options = { pattern: 123 }
+    error = assert_raises(ArgumentError) { subject }
+    assert_equal ':pattern must be a String', error.message
+  end
+
+  test 'it should raise when pattern is an invalid regular expression' do
+    @options = { pattern: '[' }
+    error = assert_raises(ArgumentError) { subject }
+    assert_match(/:pattern must be a valid regular expression/, error.message)
+  end
+
   test 'it should passed when value contains line feeds or horizontal tabs.' do
     @value = "あい\r\nうえ\rお\nかき\tくけこ"
     @options = nil

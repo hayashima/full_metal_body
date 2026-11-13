@@ -474,6 +474,22 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
     @whitelist = nil
     it_is_invalid_without_whitelist
   end
+
+  test 'it should be succeeded when file extension matches configured options.' do
+    @keys = ['key']
+    @value = upload_image
+    @whitelist = {
+      'key' => {
+        'type' => 'file',
+        'options' => {
+          'content_type' => 'image/png',
+          'file_size' => 1.megabyte,
+          'allowed_extensions' => ['.png'],
+        },
+      },
+    }
+    it_is_valid_with_whitelist
+  end
   #
   # File: end
   #

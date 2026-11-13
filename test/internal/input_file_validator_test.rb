@@ -24,6 +24,78 @@ class FullMetalBody::Internal::InputFileValidatorTest < ActiveSupport::TestCase
     assert subject.valid?
   end
 
+  test 'it should pass when file extension matches regardless of case.' do
+    @value = ActionDispatch::Http::UploadedFile.new(
+      filename: 'mandrill.PNG',
+      type: 'image/png',
+      tempfile: StringIO.new(file_fixture('images/mandrill.png').read)
+    )
+    @options = { allowed_extensions: ['.png'] }
+    assert subject.valid?
+  end
+
+  test 'it should pass when a compound file extension matches regardless of case.' do
+    @value = ActionDispatch::Http::UploadedFile.new(
+      filename: 'backup.TAR.GZ',
+      type: 'application/gzip',
+      tempfile: StringIO.new('archive')
+    )
+    @options = { allowed_extensions: ['.tar.gz'] }
+    assert subject.valid?
+  end
+
+  test 'it should not pass when only the last part of a compound extension matches.' do
+    @value = ActionDispatch::Http::UploadedFile.new(
+      filename: 'backup.gz',
+      type: 'application/gzip',
+      tempfile: StringIO.new('archive')
+    )
+    @options = { allowed_extensions: ['.tar.gz'] }
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_extension)
+  end
+
+  test 'it should not pass when file extension is not allowed.' do
+    @options = { allowed_extensions: ['.jpg'] }
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_extension)
+  end
+
+  test 'it should reject a NUL-containing filename when extensions are restricted.' do
+    @value = ActionDispatch::Http::UploadedFile.new(
+      filename: "mandrill\0.png",
+      type: 'image/png',
+      tempfile: StringIO.new(file_fixture('images/mandrill.png').read)
+    )
+    @options = { allowed_extensions: ['.png'] }
+
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_extension)
+  end
+
+  test 'it should raise when allowed_extensions is not an array of extensions.' do
+    @options = { allowed_extensions: ['png'] }
+    error = assert_raises(ArgumentError) { subject }
+    assert_equal ':allowed_extensions must be an Array of extensions', error.message
+  end
+
+  test 'it should raise when allowed_extensions is false.' do
+    @options = { allowed_extensions: false }
+    error = assert_raises(ArgumentError) { subject }
+    assert_equal ':allowed_extensions must be an Array of extensions', error.message
+  end
+
+  test 'it should pass when allowed_extensions is nil.' do
+    @options = { allowed_extensions: nil }
+    assert subject.valid?
+  end
+
+  test 'it should reject all files when allowed_extensions is empty.' do
+    @options = { allowed_extensions: [] }
+    assert_not subject.valid?
+    assert subject.errors.of_kind?(:attribute, :invalid_extension)
+  end
+
   test 'it should pass when options is nil.' do
     @options = nil
     assert subject.valid?

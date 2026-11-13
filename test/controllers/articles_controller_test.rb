@@ -181,6 +181,7 @@ class ArticlesControllerTest < ActionDispatch::IntegrationTest
             "options" => {
               "content_type" => "image/png",
               "file_size" => 1.megabytes,
+              "allowed_extensions" => [".png"],
             }
           }
         }

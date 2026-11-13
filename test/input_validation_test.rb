@@ -406,6 +406,39 @@ class FullMetalBody::InputValidationTest < ActiveSupport::TestCase
       @subject = nil
     end
   end
+
+  test 'it should be succeeded when configured boolean values are used' do
+    @keys = ['key']
+    @whitelist = {
+      'key' => {
+        'type' => 'boolean',
+        'options' => {
+          'true_values' => ['yes'],
+          'false_values' => ['no'],
+        },
+      },
+    }
+    ['yes', 'no', true, false].each do |bool|
+      @value = bool
+      it_is_valid_with_whitelist
+      @subject = nil
+    end
+  end
+
+  test 'it should be failed when boolean value is not in the configured values' do
+    @keys = ['key']
+    @value = 'true'
+    @whitelist = {
+      'key' => {
+        'type' => 'boolean',
+        'options' => {
+          'true_values' => ['yes'],
+          'false_values' => ['no'],
+        },
+      },
+    }
+    it_is_invalid_with_whitelist
+  end
   #
   # Boolean: end
   #
